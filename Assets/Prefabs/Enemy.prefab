@@ -171,7 +171,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 890da3c615ff39c4e84808fc06da77f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  followSpeed: 2
-  followDistance: 0
-  offset: {x: 0, y: 1, z: 0}
+  speed: 5

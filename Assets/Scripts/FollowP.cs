@@ -1,51 +1,68 @@
 using UnityEngine;
 
-public class FollowPlayer : MonoBehaviour
+[RequireComponent(typeof(Rigidbody2D))]
+public class Enemy : MonoBehaviour
 {
-    [Header("Target to follow")]
-    [Tooltip("Assign the player's Transform here (or tag your player as 'Player' to auto-detect)")]
-    public Transform player; // Drag your Player GameObject here in the Inspector
+    [SerializeField] private float moveSpeed = 3f;
+    [SerializeField] private float stopDistance = 0.8f;
+    [SerializeField] private float damagePerSecond = 10f;
 
-    [Header("Follow settings")]
-    [Tooltip("How fast the follower moves toward the player (units per second)")]
-    public float followSpeed = 5f;
-
-    [Tooltip("How far behind the player the follower stays")]
-    public float followDistance = 2f;
-
-    [Tooltip("Offset from the player’s position (e.g. above the head)")]
-    public Vector3 offset = new Vector3(0, 1, 0);
+    private Transform player;
+    private Rigidbody2D rb;
+    private PHealth playerHealth;
+    private bool touchingPlayer = false;
 
     void Start()
     {
-        // Automatically find the player if not assigned
-        if (player == null)
-        {
-            GameObject foundPlayer = GameObject.FindGameObjectWithTag("Player");
-            if (foundPlayer != null)
-            {
-                player = foundPlayer.transform;
-            }
-            else
-            {
-                Debug.LogWarning("[FollowPlayer] No player assigned and no GameObject tagged 'Player' found!");
-            }
-        }
+        player = GameObject.FindGameObjectWithTag("Player").transform;
+        rb = GetComponent<Rigidbody2D>();
+
+        rb.gravityScale = 0;
+        rb.freezeRotation = true;
     }
 
-    void LateUpdate()
+    void FixedUpdate()
     {
         if (player == null) return;
 
-        // Calculate target position
-        Vector3 direction = (player.position - transform.position).normalized;
-        Vector3 targetPosition = player.position - direction * followDistance + offset;
+        // Face the player
+        Vector2 direction = (player.position - transform.position).normalized;
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
+        rb.rotation = angle;
 
-        // Move toward target position at a constant speed
-        transform.position = Vector3.MoveTowards(
-            transform.position,
-            targetPosition,
-            followSpeed * Time.deltaTime
-        );
+        // Stop moving when close enough
+        float distance = Vector2.Distance(player.position, transform.position);
+        if (distance > stopDistance && !touchingPlayer)
+        {
+            Vector2 newPos = rb.position + direction * moveSpeed * Time.fixedDeltaTime;
+            rb.MovePosition(newPos);
+        }
+        else
+        {
+            rb.velocity = Vector2.zero; // stay still when close
+        }
+
+        // Deal damage while close
+        if (touchingPlayer && playerHealth != null)
+        {
+            playerHealth.TakeDamage(damagePerSecond * Time.fixedDeltaTime);
+        }
+    }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            touchingPlayer = true;
+            playerHealth = collision.gameObject.GetComponent<PHealth>();
+        }
+    }
+
+    void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            touchingPlayer = false;
+        }
     }
 }
