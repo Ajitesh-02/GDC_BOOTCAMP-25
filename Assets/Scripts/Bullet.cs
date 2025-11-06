@@ -2,21 +2,22 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
+    [SerializeField] private float lifetime = 2f;
+
     void Start()
     {
-        // Destroy after 3 seconds to avoid clutter
-        Destroy(gameObject, 3f);
+        Destroy(gameObject, lifetime);
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
+    void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Enemy"))
         {
-            // Destroy the enemy
-            Destroy(other.gameObject);
+            // Notify checkpoint manager
+            Checkpoint.ReportEnemyKilled(other.transform.position);
 
-            // Destroy the bullet itself
-            Destroy(gameObject);
+            Destroy(other.gameObject); // instantly destroy enemy
+            Destroy(gameObject); // destroy bullet
         }
     }
 }
